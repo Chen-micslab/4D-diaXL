@@ -4,21 +4,21 @@ from mass_cal import mz_cal as M
 import argparse
 import sys
 
-def get_args():  ##设置需要传入的参数
+def get_args():  ##Set the parameters that need to be passed in
     parser = argparse.ArgumentParser(description='Generate 4D crosslinking library')
-    parser.add_argument('--resultsdir', type=str, default=None)  ###plink的report文件夹中交联肽peptide的csv文件名
-    parser.add_argument('--mgfdir', type=str, default=None)  ###输出的文件路径不包含后缀
-    parser.add_argument('--outputdir', type=str, default=None)  ###输出的文件路径不包含后缀
-    parser.add_argument('--crosslinker', type=str, default='DSS')  ###输出的文件路径不包含后缀
+    parser.add_argument('--resultsdir', type=str, default=None)  ###The csv file name of the cross-linked peptide peptide in the report folder of plink
+    parser.add_argument('--mgfdir', type=str, default=None)  ###The output file path does not contain the suffix
+    parser.add_argument('--outputdir', type=str, default=None)  ###The output file path does not contain the suffix
+    parser.add_argument('--crosslinker', type=str, default='DSS')  ###The output file path does not contain the suffix
     return parser.parse_args()
 
-def match_msms(specturm, m_z, precursor, spe, id_s):  ###m_z是一个list，输出匹配到list中荷质比的intensity
+def match_msms(specturm, m_z, precursor, spe, id_s):  ###m_z is a list, and the intensity matching the charge-to-mass ratio in the list is output.
     title = 'TITLE='+precursor
     id_x = np.where(spe == title)
     id = id_s[int(id_x[0])]
     msms = []
     intensity = []
-    id = id + 3  #########如果是bruker转的mgf就是id+3
+    id = id + 3  #########If it is mgf transferred by bruker, it will be id+3.
     for i in range(id,len(specturm)):
         if specturm[i] == 'END IONS':
             break
@@ -37,19 +37,19 @@ def match_msms(specturm, m_z, precursor, spe, id_s):  ###m_z是一个list，输�
             m_z_1.append(-1), inten.append(-1)
         else:
             msms1 = np.abs(msms - mz)/msms
-            if np.min(msms1) <= 0.00002:  #### 设置最大质量偏移为20ppm
+            if np.min(msms1) <= 0.00002:  #### Set the maximum mass offset to 20ppm
                 m_z_1.append(msms[np.argmin(msms1)]), inten.append(intensity[np.argmin(msms1)])
             else:
                 m_z_1.append(0), inten.append(0)
     return m_z_1, inten
 
-def crosslink_ion_generation(peptide1, peptide2):  #包含1b,1y,2b,2y: +1,+2: -NH3,-H2O,noloss
+def crosslink_ion_generation(peptide1, peptide2):  #Contains 1b,1y,2b,2y: +1,+2: -NH3,-H2O,noloss
     len1 = len(peptide1)
     len2 = len(peptide2)
-    z = ['1', '2', '3', '4', '5']   ####碎片可能电荷
-    l = ['noloss'] * 5   ####中性丢失
+    z = ['1', '2', '3', '4', '5']   ####Debris may have an electrical charge
+    l = ['noloss'] * 5   ####neutral loss
     by_1 = (['1b'] * 5 + ['1y'] * 5) * (len1 - 1)
-    c = []  ###碎裂位点
+    c = []  ###fragmentation site
     for i in range(len1 - 1):
         j = i + 1
         c = c + [j] * 10
@@ -60,16 +60,16 @@ def crosslink_ion_generation(peptide1, peptide2):  #包含1b,1y,2b,2y: +1,+2: -N
     by = by_1 + by_2
     z = z * 2 * (len1 + len2 - 2)
     l = l * 2 * (len1 + len2 - 2)
-    c = np.array(c)    ###碎裂位点
-    by = np.array(by)   ###by离子类型
-    z = np.array(z)   ###碎片电荷数
-    l = np.array(l)   ###中性丢失
+    c = np.array(c)    ###fragmentation site
+    by = np.array(by)   ###byIon type
+    z = np.array(z)   ###fragment charge
+    l = np.array(l)   ###neutral loss
     data = np.column_stack((c, by, z, l))
     return data
 
 def genenrate_all_crosslink_fragment(datadir, mgf_dir, outputdir, crosslinker):
     sys.stdout.write("Loading file......\r")
-    spectrum = np.array(pd.read_csv(mgf_dir,sep='!'))  ####为了让所有数据都读在一列中，选一个最不可能出现的分隔符
+    spectrum = np.array(pd.read_csv(mgf_dir,sep='!'))  ####To read all data in one column, choose a delimiter that is least likely to occur
     spectrum = spectrum.flatten()
     spe = []
     id_s = []
@@ -88,7 +88,7 @@ def genenrate_all_crosslink_fragment(datadir, mgf_dir, outputdir, crosslinker):
         num = num + len(pep1[i]) + len(pep2[i]) - 2
     num = num * 10
     data = np.array(data)
-    a = np.array(list(data[1,:]) + [0,0,0,0,0,0,0], dtype=object)  ###加入  dtype=object，可以防止字符串被截断
+    a = np.array(list(data[1,:]) + [0,0,0,0,0,0,0], dtype=object)  ###Adding dtype=object can prevent the string from being truncated
     data1 = np.tile(a, [num, 1])
     num = 0
     name = name + ['Fragment_num', 'Fragment_type', 'Fragment_charge', 'Neutral_loss']
